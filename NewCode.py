@@ -46,14 +46,24 @@ def visual_ex() :
     
 visual_ex()
 
+import random
 
-# on ne prend que les images de 2 classes différentes
-def usps_2classes(int1, int2) :
-    index_train = np.sort(np.concatenate(( np.where(y_train==int1)[0], np.where(y_train==int2)[0] )))
-    index_test = np.sort(np.concatenate(( np.where(y_test==int1)[0], np.where(y_test==int2)[0] )))
-    return x_train[index_train], y_train[index_train], x_test[index_test], y_test[index_test]
-    
-x_train12, y_train12, x_test12, y_test12 = usps_2classes(1,2)
+# on ne prend que les images de 2 classes différentes avec une proportion de training set/test set
+def usps_2classes(int1, int2, p) :
+    index_train = random.shuffle(np.concatenate((np.where(y_train==int1)[0], np.where(y_train==int2)[0])))
+    index_test = random.suffle(np.concatenate((np.where(y_test==int1)[0], np.where(y_test==int2)[0])))
+    nb_tot = len(index_train) + len(index_test)
+    nb_train = p*nb_tot
+    if(nb_train < len(index_train)):
+        index_train = index_train[:nb_train]
+        index_test_add = index_train[nb_train:]
+        return x_train[index_train], y_train[index_train], np.concatenate(x_train[index_test_add], x_test), np.concatenate(y_train[index_test_add], y_test)
+    else:
+        index_train_add = index_test[:nb_train-len(index_train)]
+        index_test = index_test[nb_train-len(index_train):]
+        return np.concatenate(x_train[index_train], x_test[index_train_add]), np.concatenate(y_train[index_train]+y_test[index_train_add], x_test[index_test], y_test[index_test]
+
+x_train12, y_train12, x_test12, y_test12 = usps_2classes(1,9)
 
 
 
@@ -106,7 +116,7 @@ def createAdj(x_train12, x_test12, sigma) :
     for i in range (n) :
         for j in range (n) :
             #Adj[i][j] = np.dot(x[i],x[j]) # somme du produit des intensites des pixels correspondants
-            Adj[i][j] = sum((x[i] - x[j])**2)
+            Adj[i][j] = sum((x[i] - x[j])*(x[i] - x[j]))
     Adj = np.exp(-np.multiply(Adj,sigma))
     return Adj
     
@@ -155,16 +165,16 @@ if True : # Test 2
     score=[]
     test_sigma_log=np.arange(-2.2,0.1,0.1)
     test_sigma=10**(test_sigma_log)
-#     statesChapeau = labeliseG(Adj,states,l,u)
-#     print (statesChapeau)
-#     statesChapeau = np.where(statesChapeau>1.5, 2, 1)
-#     print(sum(statesChapeau[len(y_train12):] == y_test12)/len(y_test12)*100, "%")
-    for sigma in test_sigma :
-        Adj = createAdj(x_train12,x_test12,sigma)
-        statesChapeau = labeliseG(Adj,states,l,u)
-        statesChapeau = np.where(statesChapeau>1.5, 2, 1)
-        print(sum(statesChapeau[len(y_train12):] == y_test12)/len(y_test12)*100, "%")    
-        score.append(sum(statesChapeau[len(y_train12):] == y_test12)/len(y_test12)*100)
+    statesChapeau = labeliseG(Adj,states,l,u)
+    print (statesChapeau)
+    statesChapeau = np.where(statesChapeau>1.5, 2, 1)
+    print(sum(statesChapeau[len(y_train12):] == y_test12)/len(y_test12)*100, "%")
+#     for sigma in test_sigma :
+#         Adj = createAdj(x_train12,x_test12,sigma)
+#         statesChapeau = labeliseG(Adj,states,l,u)
+#         statesChapeau = np.where(statesChapeau>1.5, 2, 1)
+#         print(sum(statesChapeau[len(y_train12):] == y_test12)/len(y_test12)*100, "%")    
+#         score.append(sum(statesChapeau[len(y_train12):] == y_test12)/len(y_test12)*100)
     plt.figure()
     plt.plot(test_sigma_log,score)
     plt.xlabel("log sigma")
